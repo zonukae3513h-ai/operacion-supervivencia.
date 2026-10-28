@@ -1,0 +1,37 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [principal, main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract
+        run: |
+          unzip -o OperaciónSupervivenciaAndroid_con_compilacion_en_nube.zip -d extracted || unzip -o OperacionSupervivenciaAndroid_con_compilacion_en_nube.zip -d extracted
+          cp -r extracted/. . || true
+          ls -la
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - run: chmod +x gradlew || true
+      - name: Build
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug
+          else
+            /tmp/gradle-8.9/bin/gradle assembleDebug || ./gradlew assembleDebug
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Operacion-APK
+          path: app/build/outputs/apk/debug/*.apk
